@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>ASCO STUDIO — Invoice & Pembayaran</title>
+<meta name="description" content="Invoice & pembayaran ASCO STUDIO">
+<link rel="icon" href="https://raw.githubusercontent.com/sangcondro-code/asco.std/main/Logo%20Asco.jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#1C1917; --brand:#C81E1E; --brand-dark:#8F1414; --paper:#FAF7F2; --border:#E7E2DA; --text-muted:#78716C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--paper);font-family:'Inter',sans-serif;overflow:hidden;}
+
+  /* Iframe pembungkus — mengisi seluruh viewport, tanpa border/scrollbar
+     tambahan supaya terasa seperti halaman native, bukan "kotak tertanam". */
+  #app-frame{
+    position:fixed; inset:0; width:100%; height:100%; border:0; background:#fff;
+    opacity:0; transition:opacity .35s ease;
+  }
+  #app-frame.ready{opacity:1;}
+
+  /* ===== Layar loading — tampil sampai iframe selesai dimuat ===== */
+  #boot-screen{
+    position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    background:linear-gradient(150deg, var(--ink) 0%, #2b2521 60%, var(--brand-dark) 130%);
+    transition:opacity .3s ease, visibility .3s ease;
+  }
+  #boot-screen.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  #boot-screen .mark{
+    width:56px; height:56px; border-radius:14px; background:#fff; padding:6px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25); overflow:hidden;
+  }
+  #boot-screen .mark img{width:100%;height:100%;object-fit:contain;display:block;}
+  #boot-screen .spinner{
+    width:26px; height:26px; border:3px solid rgba(255,255,255,.18); border-top-color:var(--brand);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #boot-screen .label{
+    font-family:'Space Grotesk',sans-serif; font-size:.78rem; letter-spacing:.5px; color:rgba(255,255,255,.55);
+  }
+
+  /* ===== Fallback — tampil kalau iframe gagal/lambat dimuat ===== */
+  #fallback-screen{
+    position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center; padding:24px;
+    background:var(--paper);
+  }
+  #fallback-screen.show{display:flex;}
+  .fallback-card{
+    max-width:380px; width:100%; text-align:center; background:#fff; border:1px solid var(--border);
+    border-radius:16px; padding:32px 28px; box-shadow:0 12px 32px rgba(28,25,23,.08);
+  }
+  .fallback-card i{font-size:1.8rem; color:var(--brand); margin-bottom:12px; display:block;}
+  .fallback-card h1{
+    font-family:'Space Grotesk',sans-serif; font-size:1.05rem; margin:0 0 8px; color:var(--ink);
+  }
+  .fallback-card p{font-size:.85rem; color:var(--text-muted); line-height:1.6; margin:0 0 20px;}
+  .fallback-card a{
+    display:inline-block; background:var(--brand); color:#fff; text-decoration:none; font-weight:700;
+    font-size:.85rem; padding:11px 22px; border-radius:10px; transition:.15s;
+  }
+  .fallback-card a:hover{background:var(--brand-dark);}
+</style>
+</head>
+<body>
+
+<div id="boot-screen">
+  <div class="mark"><img src="https://raw.githubusercontent.com/sangcondro-code/asco.std/main/Logo%20Asco.jpeg" alt="ASCO STUDIO"></div>
+  <div class="spinner"></div>
+  <div class="label">MEMUAT ASCO STUDIO…</div>
+</div>
+
+<div id="fallback-screen">
+  <div class="fallback-card">
+    <i>&#9888;</i>
+    <h1>Halaman butuh waktu lebih lama dari biasanya</h1>
+    <p>Ini bisa terjadi kalau koneksi sedang lambat, atau browser membatasi konten tertanam. Coba buka langsung lewat tombol di bawah.</p>
+    <a id="fallback-link" href="#" target="_blank" rel="noopener">Buka Langsung</a>
+  </div>
+</div>
+
+<iframe id="app-frame" title="ASCO STUDIO" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+<script>
+/* ============================================================
+   KONFIGURASI — GANTI DENGAN URL DEPLOYMENT APPS SCRIPT ANDA
+   ------------------------------------------------------------
+   Ambil dari: Apps Script > Deploy > Manage deployments > salin
+   URL yang berakhiran "/exec". PENTING: setiap kali Anda deploy
+   ulang, gunakan "Manage deployments > Edit > New version" (BUKAN
+   "New deployment") supaya URL ini tidak berubah dan halaman ini
+   tidak perlu diedit lagi.
+   ============================================================ */
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/GANTI_DENGAN_DEPLOYMENT_ID_ANDA/exec';
+
+/* PERAMBAT PARAMETER: link invoice dari email (mis. ?page=invoice&id=..
+   &token=..) akan otomatis diteruskan apa adanya ke iframe, jadi link yang
+   dikirim ke klien tetap berfungsi persis sama walau dibuka lewat domain
+   Vercel/GitHub Anda alih-alih domain Google langsung. */
+(function () {
+  var query = window.location.search || '';
+  var targetUrl = APPS_SCRIPT_URL + query;
+
+  var frame = document.getElementById('app-frame');
+  var bootScreen = document.getElementById('boot-screen');
+  var fallbackScreen = document.getElementById('fallback-screen');
+  document.getElementById('fallback-link').href = targetUrl;
+
+  var loaded = false;
+
+  frame.addEventListener('load', function () {
+    loaded = true;
+    frame.classList.add('ready');
+    bootScreen.classList.add('hidden');
+    fallbackScreen.classList.remove('show');
+  });
+
+  // Kalau dalam 12 detik iframe belum juga selesai dimuat (koneksi lambat,
+  // atau browser memblokir konten tertanam), tampilkan fallback dengan
+  // tautan buka-langsung — supaya pengguna tidak terjebak layar loading
+  // selamanya tanpa penjelasan.
+  setTimeout(function () {
+    if (!loaded) {
+      bootScreen.classList.add('hidden');
+      fallbackScreen.classList.add('show');
+    }
+  }, 12000);
+
+  frame.src = targetUrl;
+})();
+</script>
+</body>
+</html>
