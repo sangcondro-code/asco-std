@@ -13,6 +13,18 @@
 <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/sangcondro-code/asco.std/main/Logo%20Asco.jpeg" id="favicon-link">
 <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/sangcondro-code/asco.std/main/Logo%20Asco.jpeg" id="apple-touch-icon-link">
 
+<!-- IKON UNTUK "ADD TO HOME SCREEN" — TANPA manifest.json terpisah.
+     - apple-touch-icon (di atas) -> dipakai Safari/iOS.
+     - rel="icon" dengan sizes eksplisit di bawah -> dipakai Chrome (Android
+       & Desktop) sebagai fallback ikon shortcut kalau tidak ada manifest.
+       Chrome mengambil ikon terbesar yang tersedia; sizes="512x512" &
+       sizes="192x192" membantu Chrome yakin ini layak dipakai sebagai ikon
+       app, bukan sekadar favicon kecil biasa (itu yang bikin sebelumnya
+       Chrome jatuh ke ikon default/generic). -->
+<link rel="icon" type="image/jpeg" sizes="512x512" href="https://raw.githubusercontent.com/sangcondro-code/asco.std/main/Logo%20Asco.jpeg" id="favicon-link-512">
+<link rel="icon" type="image/jpeg" sizes="192x192" href="https://raw.githubusercontent.com/sangcondro-code/asco.std/main/Logo%20Asco.jpeg" id="favicon-link-192">
+<meta name="theme-color" content="#129459">
+
 <!-- PERFORMA: preconnect supaya browser mulai DNS/TLS handshake ke CDN eksternal
      lebih awal, sebelum parser sampai ke tag <link>/<script> yang memakainya —
      mengurangi waktu tunggu terutama di jaringan seluler saat buka invoice. -->
@@ -3664,10 +3676,10 @@ function applyBootstrapData_(res, skipCacheWrite){
 // halaman publik klien). Aman dipanggil berkali-kali/dgn nilai kosong.
 function applyFaviconFromSettings_(logoUrl){
   if (!logoUrl) return;
-  var l1 = document.getElementById('favicon-link');
-  var l2 = document.getElementById('apple-touch-icon-link');
-  if (l1) l1.href = logoUrl;
-  if (l2) l2.href = logoUrl;
+  ['favicon-link-512', 'favicon-link-192', 'apple-touch-icon-link'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.href = logoUrl;
+  });
 }
 
 function bootstrapCacheKey_(username){
